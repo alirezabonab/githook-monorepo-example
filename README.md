@@ -1,0 +1,1 @@
+# githook-monorepo-example
