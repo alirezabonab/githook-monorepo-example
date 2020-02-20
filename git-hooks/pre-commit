@@ -1,0 +1,58 @@
+#!/bin/sh
+
+# BAECKEND ESLINT CHECK
+###########################
+BACKEND_STAGED_FILES=($(git diff --diff-filter=d --cached --name-only ./backend | grep -E '^.*src\/.*\.(js|jsx|tsx|ts)$'))
+
+echo $BACKEND_STAGED_FILES
+STAGED_FILES=$BACKEND_STAGED_FILES
+
+for i in "${!STAGED_FILES[@]}"; do
+  DATA=${STAGED_FILES[$i]}
+  pattern="backend/"
+  DATA=${DATA/$pattern/}
+  STAGED_FILES[$i]=$DATA
+done
+
+npm run lint --prefix ./backend -- "${STAGED_FILES[@]}" --fix
+
+ESLINT_EXIT="$?"
+
+# Re-add files since they may have been fixed
+git add "${BACKEND_STAGED_FILES[@]}"
+
+if [[ "${ESLINT_EXIT}" == 0 ]]; then
+  echo ""
+else
+  printf "\n\033[41mCOMMIT FAILED:\033[0m Fix eslint errors and try again\n"
+  exit 1
+fi
+
+# FRONTEND ESLINT CHECK
+###########################
+FRONTEND_STAGED_FILES=($(git diff --diff-filter=d --cached --name-only ./frontend | grep -E '^.*src\/.*\.(js|jsx|tsx|ts)$'))
+
+echo $FRONTEND_STAGED_FILES
+STAGED_FILES=$FRONTEND_STAGED_FILES
+for i in "${!STAGED_FILES[@]}"; do
+  DATA=${STAGED_FILES[$i]}
+  pattern="frontend/"
+  DATA=${DATA/$pattern/}
+  STAGED_FILES[$i]=$DATA
+done
+
+npm run lint --prefix ./frontend -- "${STAGED_FILES[@]}" --fix
+
+ESLINT_EXIT="$?"
+
+# Re-add files since they may have been fixed
+git add "${FRONTEND_STAGED_FILES[@]}"
+
+if [[ "${ESLINT_EXIT}" == 0 ]]; then
+  printf "\n\033[42mCOMMIT SUCCEEDED\033[0m\n"
+else
+  printf "\n\033[41mCOMMIT FAILED:\033[0m Fix eslint errors and try again\n"
+  exit 1
+fi
+
+exit $?
